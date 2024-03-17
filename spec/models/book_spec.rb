@@ -22,7 +22,7 @@ RSpec.describe Book, type: :model do
   end
 
 
-  
+
   context "Uniqueness" do
     before do
       Book.create!(title: "Unique Title", description: "A Description", published_at: Date.today)
@@ -34,4 +34,36 @@ RSpec.describe Book, type: :model do
       expect(book.errors[:title]).to include("has already been taken")
     end
   end
+
+  context "Future Publication" do
+    it "|- allows future published_at dates" do
+      future_date_book = Book.new(title: "Future Book", description: "Future Description", published_at: Date.today + 1.year)
+      expect(future_date_book).to be_valid
+    end
+  end
+
+  describe "|- .search_by_title" do
+    let!(:book1) { Book.create!(title: "Ruby on Rails", description: "A book about Rails", published_at: Date.today ) }
+    let!(:book2) { Book.create!(title: "Ruby Programming", description: "A book about Ruby", published_at: Date.today ) }
+
+    it "|- finds books that match the title query" do
+      expect(Book.search_by_title("Rails")).to include(book1)
+      expect(Book.search_by_title("Ruby")).to include(book2)
+    end
+
+    it "|- returns an empty result when no titles match" do
+      expect(Book.search_by_title("Python")).to be_empty
+    end
+  end
+
+  describe "|- #publish" do
+    let(:book) { Book.create!(title: "Sample Book", description: "Sample Description", published_at: Date.today, published: false ) }
+
+    it "|- sets published to true" do
+      book.publish
+      expect(book.reload.published).to eq(true)
+    end
+  end
+
+
 end

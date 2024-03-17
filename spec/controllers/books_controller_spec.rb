@@ -19,5 +19,29 @@ RSpec.describe BooksController, type: :controller do
         end
     end
 
+    describe "|- POST #create" do
+        context "|- with valid parameters" do
+            let(:valid_attributes) { { title: "New Title", description: "New Description", published_at: Date.today } }
+            
+            it "|- creates a new book and returns the created status" do
+                expect {
+                    post :create, params: valid_attributes
+                }.to change(Book, :count).by(1)
+                expect(response).to have_http_status(:created)
+            end
+        end
+    end
+
+    describe "|- PATCH #publish" do
+        let!(:book) { Book.create!(title: "Unpublished Book", description: "An awesome book", published_at: Date.today, published: false) }
+
+        it "|- publishes the book" do
+            patch :publish, params: { id: book.id }
+            book.reload
+            expect(book.published).to be true
+            expect(response).to have_http_status(:ok)
+        end
+    end
+
 end
 
