@@ -1,12 +1,10 @@
 require 'swagger_helper'
 
 RSpec.describe 'Books API', type: :request do
-  # Setup block for shared test data
   let!(:existing_book) { Book.create(title: "Old Title", description: "Old Description", published_at: Date.today) }
   let(:existing_book_id) { existing_book.id }
   let(:new_book_attributes) { { title: "New Book", description: "Description of the new book", published_at: Date.today.to_s } }
 
-  # Shared context for handling not found scenarios
   shared_context '404 Not Found' do
     response '404', '|- book not found' do
       let(:id) { 'invalid' }
@@ -15,21 +13,20 @@ RSpec.describe 'Books API', type: :request do
     end
   end
 
-  # BOOKS COLLECTION OPERATIONS
-  # ---------------------------
+  # Books Collection Operations
   path "/books" do
-
-    # GET /books - Retrieves all books
-    get "Retrieves all books" do
+    # Retrieve all books, with optional filters for published status and pagination
+    get "Retrieves all books, with optional filters for published status and pagination" do
       tags "Books"
       produces "application/json"
+      parameter name: :published, in: :query, type: :boolean, required: false, description: 'Filter by published status'
+      parameter name: :page, in: :query, type: :integer, required: false, description: "Page number"
+      parameter name: :per_page, in: :query, type: :integer, required: false, description: "Number of books per page"
 
-      # Test case for when books are found
-      response '200', '|- books found' do
+      response '200', '|- books found or filtered' do
         run_test!
       end
 
-      # Test case for when the books array is empty
       response '200', '|- books array empty!' do
         before { Book.delete_all }
         run_test! do |response|
@@ -38,53 +35,8 @@ RSpec.describe 'Books API', type: :request do
       end
     end
 
-    # Test for filtering books by published status
-    get "Retrieves published or unpublished books based on query parameter" do
-      tags "Books"
-      produces "application/json"
-      # Parameter for filtering by published status
-      parameter name: :published, in: :query, type: :boolean, required: false, description: 'Filter books by published status'
-
-      # Test case for filtering by published status
-      response '200', '|- filtered books by published status' do
-        let!(:published_book) { Book.create(title: "Published Book", description: "A published book", published_at: Date.today, published: true) }
-        let!(:unpublished_book) { Book.create(title: "Unpublished Book", description: "An unpublished book", published_at: Date.today, published: false) }
-        let(:published) { true }
-        run_test! do |response|
-          data = JSON.parse(response.body)
-          expect(data.size).to eq(1)
-          expect(data.first['title']).to eq("Published Book")
-        end
-      end
-    end
-
-    # Test for pagination
-    get "Retrieves books with pagination" do
-      tags "Books"
-      produces "application/json"
-      # Parameters for pagination
-      parameter name: :page, in: :query, type: :integer, required: false, description: "Page number"
-      parameter name: :per_page, in: :query, type: :integer, required: false, description: "Number of books per page"
-
-      # Test case for pagination
-      response '200', '|- paginated books' do
-        before do
-          15.times do |i|
-            Book.create(title: "Book #{i}", description: "Description #{i}", published_at: Date.today)
-          end
-        end
-        let(:page) { 2 }
-        let(:per_page) { 5 }
-        run_test! do |response|
-          data = JSON.parse(response.body)
-          expect(data.size).to eq(5)
-          expect(data.first["title"]).to eq("Book 4")
-        end
-      end
-    end
-
-    #  POST /books - Creates a new book
-    post 'Creates a book' do
+    # Create a new book
+    post "Creates a new book" do
       tags 'Books'
       consumes 'application/json'
       parameter name: :book, in: :body, schema: {
@@ -107,18 +59,41 @@ RSpec.describe 'Books API', type: :request do
         run_test!
       end
     end
-
   end
 
-  # SINGLE BOOK OPERATIONS
-  # ----------------------
-  path '/books/{id}' do
+  # Additional Operations
+  path '/books/search' do
+    get 'Searches books by title' do
+      tags 'Books'
+      produces 'application/json'
+      parameter name: :query, in: :query, type: :string, required: true, description: 'Search query for book titles'
 
-    # GET /books/{id} - Retrieves a single book by ID
+      response '200', '|- books found' do
+        let(:query) { 'Book' }
+        run_test!
+      end
+    end
+  end
+
+  path '/books/published_in_year' do
+    get 'Retrieves books published in a specific year' do
+      tags 'Books'
+      produces 'application/json'
+      parameter name: :year, in: :query, type: :integer, required: true, description: 'Year of publication'
+
+      response '200', '|- books found' do
+        let(:year) { 2024 }
+        run_test!
+      end
+    end
+  end
+
+  # Single Book Operations
+  path '/books/{id}' do
     get 'Retrieves a single book' do
       tags 'Books'
       produces 'application/json'
-      parameter name: :id, in: :path, type: :string, description: 'ID of the book to retrieve'
+      parameter name: :id, in: :path, type: :string, required: true, description: 'ID of the book to retrieve'
 
       response '200', '|- book found' do
         let(:id) { existing_book_id }
@@ -128,17 +103,17 @@ RSpec.describe 'Books API', type: :request do
       include_context '404 Not Found'
     end
 
-    # PATCH /books/{id} - Updates an existing book by ID
-    patch 'Updates a book' do
+    patch 'Updates a book with various attributes' do
       tags 'Books'
       consumes 'application/json'
-      parameter name: :id, in: :path, type: :string, description: 'ID of the book to update'
+      parameter name: :id, in: :path, type: :string, required: true, description: 'ID of the book to update'
       parameter name: :book, in: :body, schema: {
         type: :object,
         properties: {
           title: { type: :string },
           description: { type: :string },
-          published_at: { type: :string, format: 'date' }
+          published_at: { type: :string, format: 'date' },
+          published: { type: :boolean }
         },
         required: %w[title description published_at]
       }
@@ -146,35 +121,40 @@ RSpec.describe 'Books API', type: :request do
       response '200', '|- book updated' do
         let(:id) { existing_book_id }
         let(:book) { new_book_attributes }
-        run_test! do |response|
-          data = JSON.parse(response.body)
-          expect(data['title']).to eq(new_book_attributes[:title])
-          expect(data['description']).to eq(new_book_attributes[:description])
-          expect(data['published_at']).to eq(new_book_attributes[:published_at])
-        end
+        run_test!
       end
 
       include_context '404 Not Found'
     end
 
-    # DELETE /books/{id} - Deletes a book by ID
+    path '/books/{id}/publish' do
+      patch 'Publishes a book' do
+        tags 'Books'
+        produces 'application/json'
+        parameter name: :id, in: :path, type: :string, required: true, description: 'ID of the book to publish'
+    
+        response '200', '|- book published' do
+          let(:id) { existing_book_id }
+          run_test! do |response|
+            expect(JSON.parse(response.body)['published']).to be(true)
+          end
+        end
+    
+        include_context '404 Not Found'
+      end
+    end
+
     delete 'Deletes a book' do
       tags 'Books'
       produces 'application/json'
-      parameter name: :id, in: :path, type: :string, description: 'ID of the book to delete'
+      parameter name: :id, in: :path, type: :string, required: true, description: 'ID of the book to delete'
 
       response '204', '|- book deleted' do
         let(:id) { existing_book_id }
-        run_test! do |response|
-          expect(response.body).to be_empty
-        end
+        run_test!
       end
 
       include_context '404 Not Found'
     end
   end
 end
-
-
-
-

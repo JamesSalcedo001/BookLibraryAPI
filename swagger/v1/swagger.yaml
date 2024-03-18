@@ -6,13 +6,17 @@ info:
 paths:
   "/books":
     get:
-      summary: Retrieves books with pagination
+      summary: Retrieves all books, with optional filters for published status and
+        pagination
       tags:
       - Books
-      responses:
-        '200':
-          description: "|- paginated books"
       parameters:
+      - name: published
+        in: query
+        required: false
+        description: Filter by published status
+        schema:
+          type: boolean
       - name: page
         in: query
         required: false
@@ -25,8 +29,11 @@ paths:
         description: Number of books per page
         schema:
           type: integer
+      responses:
+        '200':
+          description: "|- books array empty!"
     post:
-      summary: Creates a book
+      summary: Creates a new book
       tags:
       - Books
       parameters: []
@@ -52,6 +59,36 @@ paths:
               - title
               - description
               - published_at
+  "/books/search":
+    get:
+      summary: Searches books by title
+      tags:
+      - Books
+      parameters:
+      - name: query
+        in: query
+        required: true
+        description: Search query for book titles
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "|- books found"
+  "/books/published_in_year":
+    get:
+      summary: Retrieves books published in a specific year
+      tags:
+      - Books
+      parameters:
+      - name: year
+        in: query
+        required: true
+        description: Year of publication
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: "|- books found"
   "/books/{id}":
     get:
       summary: Retrieves a single book
@@ -60,8 +97,8 @@ paths:
       parameters:
       - name: id
         in: path
-        description: ID of the book to retrieve
         required: true
+        description: ID of the book to retrieve
         schema:
           type: string
       responses:
@@ -70,14 +107,14 @@ paths:
         '404':
           description: "|- book not found"
     patch:
-      summary: Updates a book
+      summary: Updates a book with various attributes
       tags:
       - Books
       parameters:
       - name: id
         in: path
-        description: ID of the book to update
         required: true
+        description: ID of the book to update
         schema:
           type: string
       responses:
@@ -98,6 +135,8 @@ paths:
                 published_at:
                   type: string
                   format: date
+                published:
+                  type: boolean
               required:
               - title
               - description
@@ -109,12 +148,29 @@ paths:
       parameters:
       - name: id
         in: path
-        description: ID of the book to delete
         required: true
+        description: ID of the book to delete
         schema:
           type: string
       responses:
         '204':
           description: "|- book deleted"
+        '404':
+          description: "|- book not found"
+  "/books/{id}/publish":
+    patch:
+      summary: Publishes a book
+      tags:
+      - Books
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the book to publish
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "|- book published"
         '404':
           description: "|- book not found"

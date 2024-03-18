@@ -44,7 +44,7 @@ class BooksController < ApplicationController
 
     def update
         if @book.update(book_params)
-            render json: @book
+            render json: @book, status: :ok
         else
             render json: @book.errors, status: :unprocessable_entity
         end
