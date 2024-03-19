@@ -441,6 +441,8 @@ hash.delete(:b) # => 2
 
 # select
 hash.select { |key, value| value > 1 } # => {:b=>2, :c=>3}
+numbers.select { |num| num.even? } # => [2, 4, 6]
+
 
 # reject
 hash.reject { |key, value| value > 1 } # => {:a=> 1}
@@ -468,29 +470,220 @@ numbers[0] # => 1
 
 ## shovel operator
 numbers << 6 # => [1, 2, 3, 4, 5, 6]
+numbers << 7 # => [1, 2, 3, 4, 5, 6, 7]
 
 
 ## common array methods
 
 # push
+numbers.push(6) # => [1, 2, 3, 4, 5, 6]
 
 # pop
+numbers.pop # => [1, 2, 3, 4, 5]
+
+# shift
+numbers.shift # => [2, 3, 4, 5]
+
+# unshift
+numbers.unshift(0) # => [0, 2, 3, 4, 5]
+
+# delete
+numbers.delete(2) # => [1, 3, 4, 5]
 
 # delete_at
+numbers.delete_at(1) # => [1, 3, 4, 5]
 
 # length
+numbers.length # => 5
+
+# compact
+num_arr = [1, nil, 2, nil, 3]
+num_arr.compact # => [1, 2, 3]
+
+# flatten
+arr = [1, [2, 3], [4, [5]]]
+arr.flatten # => [1, 2, 3, 4, 5]
+
+# uniq
+copy_arr = [1, 1, 2, 2, 2, 3, 3, 4, 5, 5, 5]
+copy_arr.uniq # => [1, 2, 3, 4, 5]
 
 # sort
+unsorted = [3, 1, 2]
+unsorted.sort # => [1, 2, 3]
+
+# each
+numbers.each { |num| puts num } # => 1 2 3
+
+
+# sum
+numbers.sum # => 15
+
+# min
+numbers.min # => 1
+
+# max
+numbers.max # => 5
+
+# first
+numbers.first # => 1
+numbers.first(3) # => [1, 2, 3]
+
+# last
+numbers.last # => 5
+numbers.last(2) # => [4, 5]
+
+# sample
+numbers.sample # => 3 (random)
+numbers.sample(2) # => [1, 5] (random)
 
 # reverse
+numbers.reverse # => [5, 4, 3, 2, 1]
 
 # include?
+numbers.include?(2) # => true
+numbers.include(8) # => false 
 
 # map
+numbers.map { |num| num * 2 } # => [2, 4, 6, 8, 10]
 
-# select
+# zip
+arr1 = [1, 2, 3]
+arr2 = ["a", "c", "c"]
+arr1.zip(arr2) # => [[1, "a"], [2, "b"], [3, "c"]]
 
-numbers.select { |num| num.even? } # => [2, 4, 6]
+
+# join
+arr = ["Hello", "World"]
+arr.join(" ") # => "Hello World"
+
+
+######
+
+
+# methods
 
 
 
+# default parameters
+
+def greet(name = "James")
+    puts "Hello, #{name}"
+end
+
+puts greet # => "Hello, James"
+puts greet("Binx") # => "Hello, Binx"
+
+
+# keyword arguments or kwargs
+
+def describe_person(name:, age:)
+    puts "#{name} is #{age} years old"
+end
+
+describe_person(name: "Alice", age: 30) # Alice is 30 years old
+
+
+# default kwargs
+
+def describe_person(name:, age: 18)
+    puts "#{name} is #{age} years old" 
+end
+
+describe_person(name: "Bob") # Bob is 18 years old
+
+
+# Variable num of arguments splat operator
+
+def greet_many(*names)
+    names.each { |name| puts "Hello, #{name}!" }
+end
+
+greet_many("Alice", "Bob", "Carol") # => Hello, Alice!
+                                    # => Hello, Bob!
+                                    # => Hello, Carol!
+
+
+# Double splat used for keyword arguments passing in unspecified number of kwargs as a hash
+
+def describe_people(**people)
+    people.each { |name, age| puts "#{name} is #{age} years old" }
+end
+ 
+describe_people(Alice: 28, Bob: 25) # => Alice is 28 years old
+                                    # => Bob is 25 years old
+
+
+
+# mixed arguments, regular, keyword, splat arguments
+
+def mixed_args(a, b, *c, d:, e:, **f)
+    puts "a: #{a}, b: #{b}, c: #{c.inspect}, d: #{d}, e: #{e}, f: #{f.inspect}"
+end
+
+mixed_args(1, 2, 3, 4, d: 5, e: 6, x: 7, y: 8)  # => a: 1, b: 2, c: [3, 4], d: 5, e: 6, f: {:x=>7, :y=>8}
+
+
+## error handling 
+
+begin 
+    # code that may raise an exception
+rescue SomeSpecificException => e
+    # code to run if the exception is raise
+ensure
+    # code that will always run regardless of an exception being raised or not
+end
+
+# begin and rescue
+
+begin
+    1 / 0
+rescue ZeroDivisionError => e
+    puts "Can't divide by zero!"
+    puts "Error: #{e.message}"
+
+
+# ensure
+
+file = File.open("example.txt")
+begin 
+    # read from file or perform operations
+rescue => e
+    puts "an error occurred: #{}"
+ensure
+    file.close
+    puts "closed file"
+end
+
+
+# retry
+
+attempts = 0
+
+begin
+    attempts += 1
+    puts "Trying to do something..."
+    # line of code that might fail
+rescue
+    retry if attempts < 3
+    puts "Failed after 3 attempts"
+end
+
+
+# inline rescue
+result = 1 / 0 rescue "Can't divide by zero"
+puts result # output: can't divide by zero
+
+
+# raising exceptions with 'raise'
+
+def calculate_division(dividend, divisor)
+    raise ArgumentError, "divisor cannot be zero" if divisor == 0
+    dividend / divisor
+end
+
+begin
+    calculate_division(10, 0)
+rescue ArgumentError => e
+    puts e.message
+end
